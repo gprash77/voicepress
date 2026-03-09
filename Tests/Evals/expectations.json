@@ -1,0 +1,8 @@
+{
+  "fixtures": [
+    {
+      "audioFile": "sample-hello.wav",
+      "expectedText": "hello from voicepress"
+    }
+  ]
+}
