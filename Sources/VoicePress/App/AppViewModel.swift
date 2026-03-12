@@ -199,6 +199,10 @@ final class AppViewModel: ObservableObject {
     }
 
     private func stopRecording() async {
+        guard case .recording = state else {
+            return
+        }
+
         recordingSafetyTask?.cancel()
         recordingSafetyTask = nil
 

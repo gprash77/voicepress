@@ -4,17 +4,31 @@ import VoicePressCore
 struct WhisperCLITranscriber: Transcribing {
     let executablePath: String
     let modelPath: String
+    private let libraryPaths: String
 
     var backend: TranscriptionBackend {
         .whisperCLI(modelPath: modelPath)
     }
 
     init(
-        executablePath: String = "/Applications/voicepress/vendor/whisper.cpp/build/bin/whisper-cli",
-        modelPath: String = "/Applications/voicepress/vendor/whisper.cpp/models/ggml-base.en.bin"
+        executablePath: String? = nil,
+        modelPath: String? = nil
     ) {
-        self.executablePath = executablePath
-        self.modelPath = modelPath
+        let resolvedExecutablePath = executablePath ?? Self.resolveDefaultExecutablePath()
+        self.executablePath = resolvedExecutablePath
+
+        let resolvedBuildRoot = URL(fileURLWithPath: resolvedExecutablePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .path
+
+        self.modelPath = modelPath ?? Self.resolveDefaultModelPath()
+        self.libraryPaths = [
+            "\(resolvedBuildRoot)/src",
+            "\(resolvedBuildRoot)/ggml/src",
+            "\(resolvedBuildRoot)/ggml/src/ggml-blas",
+            "\(resolvedBuildRoot)/ggml/src/ggml-metal",
+        ].joined(separator: ":")
     }
 
     func transcribe(audioFileAtPath path: String) async throws -> TranscriptionResult {
@@ -32,12 +46,6 @@ struct WhisperCLITranscriber: Transcribing {
         let transcriptPath = path + ".txt"
         let executableURL = URL(fileURLWithPath: executablePath)
         let buildDirectory = executableURL.deletingLastPathComponent()
-        let libraryPaths = [
-            "/Applications/voicepress/vendor/whisper.cpp/build/src",
-            "/Applications/voicepress/vendor/whisper.cpp/build/ggml/src",
-            "/Applications/voicepress/vendor/whisper.cpp/build/ggml/src/ggml-blas",
-            "/Applications/voicepress/vendor/whisper.cpp/build/ggml/src/ggml-metal",
-        ].joined(separator: ":")
 
         if FileManager.default.fileExists(atPath: transcriptPath) {
             try? FileManager.default.removeItem(atPath: transcriptPath)
@@ -52,6 +60,11 @@ struct WhisperCLITranscriber: Transcribing {
         process.arguments = [
             "--model", modelPath,
             "--file", path,
+            "--language", "en",
+            "--no-timestamps",
+            "--max-context", "0",
+            "--split-on-word",
+            "--prompt", "VoicePress is the app name. This is short English dictation.",
             "--no-prints",
             "--output-txt",
         ]
@@ -87,5 +100,45 @@ struct WhisperCLITranscriber: Transcribing {
             engine: "whisper-cli",
             elapsed: Date().timeIntervalSince(started)
         )
+    }
+
+    private static func resolveDefaultExecutablePath() -> String {
+        for root in candidateRoots() {
+            let candidate = "\(root)/vendor/whisper.cpp/build/bin/whisper-cli"
+            if FileManager.default.fileExists(atPath: candidate) {
+                return candidate
+            }
+        }
+        return "\(candidateRoots().first ?? FileManager.default.currentDirectoryPath)/vendor/whisper.cpp/build/bin/whisper-cli"
+    }
+
+    private static func resolveDefaultModelPath() -> String {
+        for root in candidateRoots() {
+            let candidate = "\(root)/vendor/whisper.cpp/models/ggml-base.en.bin"
+            if FileManager.default.fileExists(atPath: candidate) {
+                return candidate
+            }
+        }
+        return "\(candidateRoots().first ?? FileManager.default.currentDirectoryPath)/vendor/whisper.cpp/models/ggml-base.en.bin"
+    }
+
+    private static func candidateRoots() -> [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let sourcePath = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .path
+
+        return [
+            ProcessInfo.processInfo.environment["VOICEPRESS_ROOT"],
+            FileManager.default.currentDirectoryPath,
+            sourcePath,
+            "\(home)/projects/voicepress",
+            "\(home)/voicepress",
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
     }
 }

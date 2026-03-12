@@ -4,6 +4,7 @@ import VoicePressCore
 
 @MainActor
 final class AudioRecorder: NSObject, AudioRecordingManaging {
+    private let minimumDuration: TimeInterval = 0.2
     private var recorder: AVAudioRecorder?
     private var startedAt: Date?
     private var outputURL: URL?
@@ -47,6 +48,14 @@ final class AudioRecorder: NSObject, AudioRecordingManaging {
         self.recorder = nil
         self.outputURL = nil
         self.startedAt = nil
+
+        let audioFile = try AVAudioFile(forReading: outputURL)
+        guard audioFile.length > 0 else {
+            throw AudioCaptureError.emptyRecording
+        }
+        guard duration >= minimumDuration else {
+            throw AudioCaptureError.recordingTooShort(minimumDuration: minimumDuration)
+        }
 
         return RecordingSummary(
             filePath: outputURL.path,

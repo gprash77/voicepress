@@ -91,6 +91,27 @@ func runChecks() throws {
     }
 
     do {
+        var machine = DictationStateMachine()
+        machine.handle(.fail("microphone unavailable"))
+        machine.handle(.pressHotkey)
+        try expect(machine.state == .recording, "pressHotkey should recover error -> recording")
+    }
+
+    do {
+        var machine = DictationStateMachine()
+        let summary = RecordingSummary(
+            filePath: "/tmp/sample.m4a",
+            startedAt: Date(timeIntervalSince1970: 10),
+            endedAt: Date(timeIntervalSince1970: 13),
+            duration: 3
+        )
+        machine.handle(.pressHotkey)
+        machine.handle(.finishRecording(summary))
+        machine.handle(.pressHotkey)
+        try expect(machine.state == .recording, "pressHotkey should allow recorded -> recording")
+    }
+
+    do {
         try expect(MicrophonePermissionStatus.granted.canRecord, "granted permission should allow recording")
         try expect(!MicrophonePermissionStatus.denied.canRecord, "denied permission should block recording")
         try expect(SpeechRecognitionPermissionStatus.granted.canTranscribe, "granted speech permission should allow transcription")

@@ -8,8 +8,8 @@ struct EvalFile: Codable {
 @main
 struct VoicePressEval {
     static func main() async {
-        let fixtureDirectory = "/Applications/voicepress/Tests/Evals/Fixtures"
-        let expectationFile = "/Applications/voicepress/Tests/Evals/expectations.json"
+        let fixtureDirectory = "\(repoRootPath())/Tests/Evals/Fixtures"
+        let expectationFile = "\(repoRootPath())/Tests/Evals/expectations.json"
 
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: expectationFile))
@@ -32,5 +32,30 @@ struct VoicePressEval {
             fputs("VoicePressEval failed: \(error.localizedDescription)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func repoRootPath() -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let sourcePath = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .path
+        let candidates = [
+            ProcessInfo.processInfo.environment["VOICEPRESS_ROOT"],
+            FileManager.default.currentDirectoryPath,
+            sourcePath,
+            "\(home)/projects/voicepress",
+            "\(home)/voicepress",
+        ]
+
+        for root in candidates.compactMap({ $0 }) {
+            let fixturesPath = "\(root)/Tests/Evals/Fixtures"
+            if FileManager.default.fileExists(atPath: fixturesPath) {
+                return root
+            }
+        }
+
+        return FileManager.default.currentDirectoryPath
     }
 }

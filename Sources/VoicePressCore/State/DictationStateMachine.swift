@@ -17,7 +17,7 @@ public struct DictationStateMachine: Sendable {
 
     public mutating func handle(_ event: DictationEvent) {
         switch (state, event) {
-        case (.idle, .pressHotkey):
+        case (.idle, .pressHotkey), (.recorded, .pressHotkey), (.error, .pressHotkey):
             state = .recording
         case (.recording, .releaseHotkey):
             break

@@ -61,6 +61,11 @@ final class GlobalHotkeyMonitor: GlobalHotkeyMonitoring {
     }
 
     private func handle(event: CGEvent, type: CGEventType) {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            reenableEventTap()
+            return
+        }
+
         guard event.getIntegerValueField(.keyboardEventKeycode) == Int64(keyCode) else {
             return
         }
@@ -73,5 +78,12 @@ final class GlobalHotkeyMonitor: GlobalHotkeyMonitoring {
         default:
             break
         }
+    }
+
+    private func reenableEventTap() {
+        guard let eventTap else {
+            return
+        }
+        CGEvent.tapEnable(tap: eventTap, enable: true)
     }
 }
