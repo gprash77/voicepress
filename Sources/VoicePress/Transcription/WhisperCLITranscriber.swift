@@ -2,6 +2,12 @@ import Foundation
 import VoicePressCore
 
 struct WhisperCLITranscriber: Transcribing {
+    private static let dictationPrompt = """
+    VoicePress is the app name. This is short English dictation for desktop text entry.
+    Common app names include TextEdit, Claude, SMS, Messages, Cursor, VS Code, Safari, Chrome, and Notes.
+    Preserve app names and capitalization when they are spoken.
+    """
+
     let executablePath: String
     let modelPath: String
     private let libraryPaths: String
@@ -64,7 +70,7 @@ struct WhisperCLITranscriber: Transcribing {
             "--no-timestamps",
             "--max-context", "0",
             "--split-on-word",
-            "--prompt", "VoicePress is the app name. This is short English dictation.",
+            "--prompt", Self.dictationPrompt,
             "--no-prints",
             "--output-txt",
         ]
@@ -113,10 +119,18 @@ struct WhisperCLITranscriber: Transcribing {
     }
 
     private static func resolveDefaultModelPath() -> String {
+        if let override = ProcessInfo.processInfo.environment["VOICEPRESS_MODEL_PATH"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !override.isEmpty {
+            return override
+        }
+
         for root in candidateRoots() {
-            let candidate = "\(root)/vendor/whisper.cpp/models/ggml-base.en.bin"
-            if FileManager.default.fileExists(atPath: candidate) {
-                return candidate
+            for modelName in ["ggml-small.en.bin", "ggml-base.en.bin"] {
+                let candidate = "\(root)/vendor/whisper.cpp/models/\(modelName)"
+                if FileManager.default.fileExists(atPath: candidate) {
+                    return candidate
+                }
             }
         }
         return "\(candidateRoots().first ?? FileManager.default.currentDirectoryPath)/vendor/whisper.cpp/models/ggml-base.en.bin"

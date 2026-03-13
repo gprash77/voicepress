@@ -111,3 +111,23 @@
   - transcription quality still needs broader phrase-set validation
   - insertion should still be checked across a small app matrix
 - Commit hash: pending
+
+## 2026-03-13 - Small model app-matrix baseline improved
+
+- Goal: Improve recognition quality across common target apps without changing the installed-app insertion path.
+- Code state:
+  - Whisper model selection now supports `VOICEPRESS_MODEL_PATH`
+  - app now prefers `ggml-small.en.bin` when it exists locally, falling back to `ggml-base.en.bin`
+  - dictation prompt expanded with common desktop app names to reduce proper-noun drift
+- Verified behavior:
+  - `swift build` passed
+  - `swift run VoicePressCoreChecks` passed
+  - `swift run VoicePressEval` passed
+  - installed `/Applications/VoicePress.app` was relaunched against the updated model selection
+  - manual app-matrix retest improved materially with `small.en`
+  - `SMS` recognized correctly in a chat window
+  - website text field recognized `testing voice press in a website`
+- Remaining risk:
+  - app-specific proper nouns still drift, including `Codex -> codec` and `TextEdit/TextPad -> text pack`
+  - repeated phrase-set validation is still needed before treating transcription quality as stable
+- Commit hash: pending
