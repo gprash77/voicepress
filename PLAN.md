@@ -26,5 +26,6 @@ Do not change more than one runtime variable between manual tests.
 ## Next after baseline
 
 1. Run a fixed phrase-set validation for `Codex`, `TextEdit`, `Claude Code`, `Messages`, `Safari`, and `Chrome`.
-2. Decide whether prompt tuning is enough for app names or whether a larger local model is still needed.
-3. Once transcription quality is stable, turn the current manual app-matrix into a repeatable checklist.
+2. Evaluate a small post-correction dictionary for known app names and product terms such as `Codex`, `Claude Code`, `Messages`, and `TextEdit`.
+3. Decide whether prompt tuning plus targeted correction is enough for app names or whether another model step is still needed.
+4. Once transcription quality is stable, turn the current manual app-matrix into a repeatable checklist.
